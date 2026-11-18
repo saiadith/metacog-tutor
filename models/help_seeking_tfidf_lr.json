@@ -1,0 +1,13 @@
+{
+  "model": "TF-IDF (word 1-2 + char 2-4) + logistic regression",
+  "labels": [
+    "answer",
+    "explain",
+    "offtask",
+    "plan",
+    "verify"
+  ],
+  "n_train": 66,
+  "cv4_accuracy": 0.725,
+  "note": "trained on the synthetic seed set in data/seed_labels.csv; retrain on hand-labelled real data"
+}

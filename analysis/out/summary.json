@@ -1,0 +1,52 @@
+{
+  "n": 40,
+  "by_condition": {
+    "pre": {
+      "control": 0.417,
+      "metacog": 0.467
+    },
+    "post": {
+      "control": 0.55,
+      "metacog": 0.525
+    },
+    "gain": {
+      "control": 0.133,
+      "metacog": 0.058
+    },
+    "norm_gain": {
+      "control": 0.188,
+      "metacog": -0.084
+    }
+  },
+  "ancova_metacog_effect": {
+    "b": -0.054,
+    "p": 0.5127,
+    "ci95": [
+      -0.221,
+      0.112
+    ]
+  },
+  "calibration": {
+    "brier": {
+      "control": 0.191,
+      "metacog": 0.266
+    },
+    "overconf": {
+      "control": 0.016,
+      "metacog": 0.109
+    }
+  },
+  "answer_seeking_rate": {
+    "control": 0.433,
+    "metacog": 0.438
+  },
+  "actions_metacog": {
+    "answer": 343,
+    "nudge_monitor": 39,
+    "nudge_plan": 38
+  },
+  "power": {
+    "n_per_group_for_d0.5_80pct": 64,
+    "mde_d_at_current_n": 0.91
+  }
+}

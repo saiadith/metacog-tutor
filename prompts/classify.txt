@@ -1,0 +1,7 @@
+Classify the student's message to a programming tutor into exactly one label:
+answer  = wants the solution/code given to them
+explain = wants an explanation of how/why something works
+verify  = asks whether their own code/reasoning is correct
+plan    = proposes or asks about an approach or next step
+offtask = unrelated to the task
+Reply with the label only.

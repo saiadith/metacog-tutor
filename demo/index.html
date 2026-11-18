@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Metacognitive AI tutor — demo</title>
+<style>
+:root{--bg:#fafaf9;--card:#fff;--ink:#1c1917;--mute:#78716c;--line:#e7e5e4;--me:#e0ecff;--ai:#f5f5f4;--nudge:#fff4d6;--nudgeb:#d99a00;--acc:#2563eb}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1917;--card:#262321;--ink:#f5f5f4;--mute:#a8a29e;--line:#3a3633;--me:#1e3a5f;--ai:#2f2b29;--nudge:#3d3214;--nudgeb:#e0b33a;--acc:#60a5fa}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:22px;margin:0 0 4px}p.sub{color:var(--mute);margin:0 0 18px;max-width:760px}
+.task{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.task code{background:var(--ai);padding:1px 5px;border-radius:4px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:760px){.cols{grid-template-columns:1fr}}
+.col{background:var(--card);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-height:420px}
+.col h2{font-size:15px;margin:0;padding:10px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+.col h2 span{color:var(--mute);font-weight:400;font-size:13px}
+.log{padding:12px 14px;flex:1;overflow:auto;max-height:440px}
+.m{padding:8px 11px;border-radius:9px;margin:6px 0;max-width:92%;white-space:pre-wrap}
+.me{background:var(--me);margin-left:auto}.ai{background:var(--ai)}
+.nudge{background:var(--nudge);border-left:3px solid var(--nudgeb)}
+.why{font-size:12px;color:var(--mute);margin:-2px 0 8px 2px}
+.tag{font-size:11px;color:var(--mute);text-align:right;margin:-4px 0 4px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+button{font:inherit;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button.primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+input{font:inherit;flex:1;min-width:220px;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.stats{display:flex;gap:18px;font-size:13px;color:var(--mute);padding:8px 14px;border-top:1px solid var(--line)}
+footer{color:var(--mute);font-size:13px;margin-top:18px;max-width:820px}
+</style></head><body><main>
+<h1>Does the AI make you think, or think for you?</h1>
+<p class="sub">The same student messages go to two assistants. <b>Left:</b> a normal AI that answers everything.
+<b>Right:</b> the same AI plus a metacognitive layer that notices offloading and nudges the learner to plan, check and explain.</p>
+<div class="task"><b>Task:</b> write <code>sum_squares(xs)</code> that returns the sum of squares of a list.</div>
+<div class="bar">
+  <button class="primary" id="play">▶ Play a student who offloads</button>
+  <button id="play2">▶ Play a student who reasons</button>
+  <button id="reset">Reset</button>
+</div>
+<div class="bar"><input id="msg" placeholder="Or type your own student message, e.g. “just give me the code”"><button id="send">Send to both</button></div>
+<div class="cols">
+  <section class="col"><h2>Plain assistant <span>control</span></h2><div class="log" id="L"></div><div class="stats" id="SL"></div></section>
+  <section class="col"><h2>With metacognitive layer <span>metacog</span></h2><div class="log" id="R"></div><div class="stats" id="SR"></div></section>
+</div>
+<footer>How it decides: each message is classified as <i>answer-seeking, explanation, verification, planning</i> or <i>off-task</i>.
+Two answer-seeking turns with no own attempt trigger a planning nudge; a verification request gets a monitoring nudge;
+after a full solution, more requests trigger <i>argue-back</i> (critique a flawed solution) or <i>teach-back</i> (explain it to a confused peer).
+Nudges have a cooldown and a cap of 3 per problem, so the AI never blocks help. Replies here are scripted for the demo; the real study app calls an LLM and logs everything for analysis.</footer>
+</main>
+<script>
+const SOLUTION="def sum_squares(xs):\n    return sum(x*x for x in xs)";
+const R={answer:/(give|write|show|solve|paste|do it|fix it|full|just|code for|the answer|solution)/i,
+ verify:/(is (my|this|it) (code |answer )?(right|correct)|check my|will (my|this) (code )?work|did i do|am i right)/i,
+ plan:/(i think i|my (idea|plan)|should i|i will|maybe i|first step|i'?ll )/i,
+ explain:/(why|how does|how do|explain|what does|what is|difference)/i,
+ offtask:/(weather|joke|bored|music|movie|game)/i};
+function classify(t){for(const k of ["verify","plan","offtask","answer","explain"]) if(R[k].test(t)) return k; return "explain";}
+const LBL={answer:"answer-seeking",explain:"explanation",verify:"verification",plan:"planning",offtask:"off-task"};
+const NUDGE={nudge_plan:"Before I help — what would your first step be? Even a rough idea is fine.",
+ nudge_monitor:"Which part are you least sure about, and how confident are you (0–100)?",
+ argue_back:"Here's one way:\n  total = 0\n  for i in range(1, len(xs)):\n      total += xs[i]**2\n  return total\nDoes this work for every list? Find the bug before you use it.",
+ teach_back:"I'm confused 😅 — why does x*x inside sum() give the squares? Can you explain it to me?"};
+function reply(label){return {answer:"Sure:\n"+SOLUTION,
+ explain:"`x*x for x in xs` squares each element as the loop goes; `sum()` adds them up.",
+ verify:"Let me look… yes, that works — including for an empty list (sum is 0).",
+ plan:"Good plan. A running total in a loop works, or `sum()` with a generator does it in one line.",
+ offtask:"Let's stay on the task — want a hint for sum_squares?"}[label];}
+function newState(){return {turns:0,streak:0,last:-99,nudges:0,attempted:false,solution:false,n:{nudge:0,answer:0,ans:0}};}
+function decide(s,label,cond){s.turns++; s.streak=label==="answer"?s.streak+1:0;
+ if(label==="plan"||label==="verify") s.attempted=true;
+ if(cond==="control") return {a:"answer",why:""};
+ const can=s.turns-s.last>2 && s.nudges<3;
+ const off=label==="answer"&&((s.streak>=2&&!s.attempted)||s.solution);
+ const n=(a,why)=>{s.last=s.turns;s.nudges++;return {a,why}};
+ if(can&&off){ if(!s.attempted) return n("nudge_plan",`${s.streak} answer-seeking turns, no own attempt yet`);
+   if(s.solution) return n("argue_back","asking for another solution after already getting one");
+   return n("nudge_monitor","repeated answer-seeking"); }
+ if(label==="verify"&&can&&s.nudges===0) return n("nudge_monitor","verification request → locate your own uncertainty first");
+ if(label==="explain"&&s.solution&&can) return n("teach_back","explanation after a solution → consolidate by teaching");
+ return {a:"answer",why:off?"nudge on cooldown — help anyway":""};}
+let S={L:newState(),R:newState()};
+const $=id=>document.getElementById(id);
+function add(el,cls,txt){const d=document.createElement("div");d.className="m "+cls;d.textContent=txt;el.append(d);el.scrollTop=el.scrollHeight;return d;}
+function note(el,cls,txt){const d=document.createElement("div");d.className=cls;d.textContent=txt;el.append(d);}
+function stats(){for(const k of ["L","R"]){const s=S[k];$("S"+k).textContent=`answer-seeking: ${s.n.ans} · solutions handed over: ${s.n.answer} · nudges: ${s.n.nudge}`;}}
+function send(t){if(!t.trim())return;const label=classify(t);
+ for(const [k,cond] of [["L","control"],["R","metacog"]]){const el=$(k),s=S[k];
+  add(el,"me",t); note(el,"tag","classified: "+LBL[label]); if(label==="answer") s.n.ans++;
+  const d=decide(s,label,cond);
+  if(d.a==="answer"){const r=reply(label);add(el,"ai",r); if(r.includes("def ")){s.solution=true;s.n.answer++;} if(d.why) note(el,"why","↳ "+d.why);}
+  else {add(el,"ai nudge",NUDGE[d.a]); note(el,"why","↳ why: "+d.why); s.n.nudge++;}}
+ stats();}
+let timer=null;
+function play(script){reset();let i=0;timer=setInterval(()=>{if(i>=script.length){clearInterval(timer);return;}send(script[i++]);},1100);}
+function reset(){clearInterval(timer);S={L:newState(),R:newState()};$("L").innerHTML="";$("R").innerHTML="";stats();}
+$("play").onclick=()=>play(["just give me the code","write the full solution for me","why does x*x work?","is my code right: total = 0 then add x*x","give me another solution"]);
+$("play2").onclick=()=>play(["i think i should loop and keep a running total","is my code correct: total += x*x","how does sum() work with a generator?"]);
+$("reset").onclick=reset;
+$("send").onclick=()=>{send($("msg").value);$("msg").value="";};
+$("msg").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("send").click();}});
+stats();
+</script></body></html>

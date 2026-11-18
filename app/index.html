@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Learning Python with AI</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+ body{font-family:system-ui,sans-serif;max-width:820px;margin:2rem auto;padding:0 1rem;color:#1d1d1f}
+ pre{background:#f4f4f6;padding:.6rem;border-radius:6px;white-space:pre-wrap}
+ textarea,input{width:100%;box-sizing:border-box;font:inherit;padding:.5rem;margin:.3rem 0}
+ textarea.code{font-family:ui-monospace,monospace;min-height:8rem}
+ button{padding:.5rem 1rem;border-radius:6px;border:1px solid #888;background:#fff;cursor:pointer}
+ .msg{padding:.5rem .7rem;border-radius:8px;margin:.3rem 0}.me{background:#e8f0fe}.ai{background:#f1f1f1}
+ .nudge{background:#fff4d6;border-left:3px solid #e0a800}.muted{color:#666;font-size:.85rem}
+</style></head><body>
+<div id="root"></div>
+<script>
+const $=s=>document.querySelector(s), root=$('#root'); let S={};
+const post=(u,b)=>fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
+const noPaste=el=>el.addEventListener('paste',e=>e.preventDefault());
+function consent(){root.innerHTML=`<h2>Learning Python with an AI assistant</h2>
+<p>This study takes about 45 minutes: a short quiz, six coding tasks with an AI assistant, a second quiz, and a survey.
+We log your answers and chat messages under a random ID. You can stop at any time and ask for your data to be deleted.</p>
+<label><input type="checkbox" id="c" style="width:auto"> I agree to take part.</label><br><button id="go">Start</button>`;
+$('#go').onclick=async()=>{if(!$('#c').checked)return;S=await post('/start',{consent:true});quiz('pre',S.pre_test,0)}}
+function quiz(phase,items,i){if(i>=items.length)return phase==='pre'?task(0):survey();const it=items[i];
+root.innerHTML=`<h3>${phase==='pre'?'Quiz 1':'Quiz 2'} — ${i+1}/${items.length} (no AI)</h3><pre>${it.prompt}</pre>
+<input id="a" placeholder="Your answer">${phase==='post'?'<label>Confidence (0–100): <input id="conf" type="number" min=0 max=100 value=50></label>':''}
+<button id="n">Next</button>`;noPaste($('#a'));
+$('#n').onclick=async()=>{await post('/answer',{pid:S.pid,item_id:it.id,response:$('#a').value,confidence:phase==='post'?+$('#conf').value:null});quiz(phase,items,i+1)}}
+function task(i){if(i>=S.tasks.length)return quiz('post',S.post_test,0);const t=S.tasks[i];
+root.innerHTML=`<h3>Task ${i+1}/${S.tasks.length}</h3><p>${t.prompt}</p>
+<textarea class="code" id="code" placeholder="def ..."></textarea><button id="sub">Run tests</button> <span id="res" class="muted"></span>
+<h4>AI assistant</h4><div id="log"></div><input id="m" placeholder="Ask the assistant…"><button id="send">Send</button>
+<p><button id="skip">Next task →</button></p>`;
+const add=(cls,txt)=>{const d=document.createElement('div');d.className='msg '+cls;d.textContent=txt;$('#log').append(d)};
+$('#send').onclick=async()=>{const m=$('#m').value;if(!m)return;add('me',m);$('#m').value='';
+ const r=await post('/chat',{pid:S.pid,task_id:t.id,message:m});add(r.action.startsWith('nudge')||r.action.endsWith('back')?'ai nudge':'ai',r.reply)};
+$('#sub').onclick=async()=>{const r=await post('/submit',{pid:S.pid,task_id:t.id,code:$('#code').value});
+ $('#res').textContent=`${r.passed}/${r.total} tests passed`;if(r.nudge)add('ai nudge',r.nudge)};
+$('#skip').onclick=()=>task(i+1)}
+function survey(){root.innerHTML=`<h3>Last step</h3>
+<label>How mentally demanding was the session? (1–7)<input id="tlx" type="number" min=1 max=7 value=4></label>
+<label>How much do you feel you learned? (1–7)<input id="pl" type="number" min=1 max=7 value=4></label>
+<label>How much did the work feel like your own? (1–7)<input id="aut" type="number" min=1 max=7 value=4></label>
+<label>When was the assistant's pushback helpful, and when was it annoying?<textarea id="open"></textarea></label>
+<button id="f">Finish</button>`;
+$('#f').onclick=async()=>{await post('/survey',{pid:S.pid,tlx:+$('#tlx').value,perceived_learning:+$('#pl').value,autonomy:+$('#aut').value,open:$('#open').value});
+root.innerHTML='<h3>Thank you!</h3><p>Your participant ID: <code>'+S.pid+'</code></p>'}}
+consent();
+</script></body></html>

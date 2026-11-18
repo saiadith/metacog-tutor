@@ -1,0 +1,67 @@
+text,label,source
+my idea is to use a counter for the while loop,plan,synthetic-template
+write the sum for me,answer,synthetic-template
+what does range do in the sum,explain,synthetic-template
+just give me the code for the while loop,answer,synthetic-template
+how does the list work,explain,synthetic-template
+why is it off by one,explain,synthetic-template
+will my code work for an empty list,verify,synthetic-template
+can you check my solution for the dictionary,verify,synthetic-template
+what is the difference between return and print,explain,synthetic-template
+can you explain this function,explain,synthetic-template
+is this right: for i in range(len(xs)),verify,synthetic-template
+explain how the dictionary iterates,explain,synthetic-template
+show me the code,answer,synthetic-template
+what music do you like,offtask,synthetic-template
+fix it for me,answer,synthetic-template
+can you help with my history essay,offtask,synthetic-template
+what should my first step be for the loop,plan,synthetic-template
+i'm bored,offtask,synthetic-template
+give me the full solution,answer,synthetic-template
+what's the weather today,offtask,synthetic-template
+my idea is to use a counter for the return value,plan,synthetic-template
+whats the correct code,answer,synthetic-template
+is my answer correct,verify,synthetic-template
+just give me the code for the while loop,answer,synthetic-template
+can you explain the return value,explain,synthetic-template
+what's the answer for the dictionary,answer,synthetic-template
+can you check my solution for fizzbuzz,verify,synthetic-template
+should I start with a for loop or while loop for the if statement,plan,synthetic-template
+why do we need an index in fizzbuzz,explain,synthetic-template
+who won the game yesterday,offtask,synthetic-template
+what should my first step be for finding the max,plan,synthetic-template
+do this function for me pls,answer,synthetic-template
+write the loop for me,answer,synthetic-template
+"i think it returns 5, am i right",verify,synthetic-template
+i need the solution to the dictionary now,answer,synthetic-template
+lol,offtask,synthetic-template
+does my the dictionary handle negatives,verify,synthetic-template
+do the list for me pls,answer,synthetic-template
+is my code for the if statement correct,verify,synthetic-template
+how old are you,offtask,synthetic-template
+what does range do in this function,explain,synthetic-template
+"i think i should loop over the list first, then sum. is that a good plan",plan,synthetic-template
+what's the answer for fizzbuzz,answer,synthetic-template
+why do we need an index in counting vowels,explain,synthetic-template
+"i will split the string then reverse, next step?",plan,synthetic-template
+did I do reversing a string right,verify,synthetic-template
+should I start with a for loop or while loop for the if statement,plan,synthetic-template
+did I do the dictionary right,verify,synthetic-template
+i need the solution to the list now,answer,synthetic-template
+how do dictionaries store keys,explain,synthetic-template
+how does finding the max work,explain,synthetic-template
+maybe i need an if inside the loop for counting vowels,plan,synthetic-template
+can you solve the sum,answer,synthetic-template
+does my the loop handle negatives,verify,synthetic-template
+solve this one,answer,synthetic-template
+is my code for finding the max correct,verify,synthetic-template
+why does the dictionary work,explain,synthetic-template
+can you solve the while loop,answer,synthetic-template
+explain how this function iterates,explain,synthetic-template
+tell me a joke,offtask,synthetic-template
+what does this error mean,explain,synthetic-template
+maybe i need an if inside the loop for reversing a string,plan,synthetic-template
+why does the return value work,explain,synthetic-template
+paste the working code for finding the max,answer,synthetic-template
+paste the working code for reversing a string,answer,synthetic-template
+im planning to store counts in a dict,plan,synthetic-template
