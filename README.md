@@ -1,89 +1,42 @@
-# metacog-tutor: a metacognitive layer for learning with generative AI
+# metacog-tutor
 
-**Question:** when students learn with an LLM assistant, does a lightweight metacognitive layer
-(prompts to plan, monitor and evaluate, plus argue-back and teach-back modes) help them keep
-doing their own thinking? We measure success by what they can do **without** the AI afterwards.
+When students learn with an AI assistant, it's easy to just ask for the answer and learn nothing. This project adds a small metacognitive layer on top of an LLM tutor: it notices when someone is offloading their thinking and nudges them to plan, check their work or explain things back, instead of handing over another solution. The real test is what people can do afterwards without the AI.
 
-It builds on research on metacognitive support for human-AI co-creation, over-reliance on AI,
-help-seeking in intelligent tutoring systems, argumentation, teachable agents, and self-regulated
-learning, and applies those ideas to learning to program with an AI assistant.
+## How it works
 
-## Design
+Each student message gets classified as answer-seeking, asking for an explanation, checking their work, planning, or off-task. A simple policy keeps track of the session (have they tried anything themselves, did the AI already give a solution, how many nudges so far) and picks a response:
 
-```mermaid
-flowchart LR
-  M["Learner message"] --> C["Help-seeking classifier: answer, explain, verify, plan, off-task"]
-  C --> P{"Policy"}
-  S["Learner state: answer streak, own attempt, solution shown, nudge budget"] --> P
-  P -->|"no signal"| A["Normal LLM answer"]
-  P -->|"offloading, no attempt"| N1["Plan nudge"]
-  P -->|"verify request"| N2["Monitor nudge: locate own uncertainty"]
-  P -->|"offloading after solution"| AB["Argue-back: critique a flawed solution"]
-  P -->|"explain after solution"| TB["Teach-back: explain to a confused agent"]
-  SUB["Submit code"] --> F{"Copied within 20 s of an AI solution"}
-  F -->|"yes"| N3["Evaluate nudge: explain why it works"]
+- a normal answer
+- "what would your first step be?" if they keep asking for the answer without trying
+- "which part are you least sure about?" when they ask the AI to check their work
+- argue-back: the AI shows a slightly broken solution and asks them to find the bug
+- teach-back: they explain the idea to a confused AI peer
+
+There's a cooldown and a cap of 3 nudges per problem, so it never blocks help completely. Every decision is logged with the reason.
+
+## What's in here
+
+- a study web app (FastAPI + one HTML page): consent, a short quiz, six Python coding tasks with the assistant, a second quiz with confidence ratings, and a survey
+- the classifier (TF-IDF + logistic regression, saved in models/)
+- a simulator that runs fake participants through the real app to check the whole pipeline end to end
+- analysis: learning gain, calibration, how often people offload over time, and a power analysis
+- a study protocol and interview guide in study/
+- demo/index.html, a standalone page you can open in a browser to see both assistants side by side
+
+One thing the simulation made clear: with 40 people you can only detect a pretty big effect. For a moderate one you'd want around 64 per group, or a design where everyone tries both versions.
+
+## Running it
+
 ```
-
-- **Two conditions**, balanced randomisation: *control* (plain assistant) and *metacog*.
-- **Procedure (~45 min):** consent → pre-test (6 output-prediction items, no AI, no paste) →
-  6 coding tasks with the assistant (auto-graded by hidden tests in a sandboxed subprocess) →
-  isomorphic post-test (no AI, confidence 0–100 per item) → survey (workload, perceived
-  learning, autonomy, open question on when the nudges helped or annoyed).
-- **Transparency:** in the metacog condition, every nudge comes with its reason, and every
-  policy decision is logged with that reason.
-- **Guard-rails against gatekeeping:** a cooldown between nudges and at most 3 nudges per problem.
-  The AI never withholds help indefinitely.
-
-## Status
-
-| Part | State |
-|---|---|
-| Web app (FastAPI + single-page frontend, SQLite event log) | ✅ runs: `uvicorn metacog.app:app` |
-| Help-seeking classifier (TF-IDF + logistic regression; LLM zero-shot option) | ✅ seed set of 66 synthetic examples. **Needs hand-labelled data from the pilot** |
-| Offloading detector + nudge policy | ✅ unit-tested (streak, cooldown, cap, fast-copy) |
-| Simulator: synthetic participants through the real HTTP API | ✅ validates the whole pipeline |
-| Analysis: ANCOVA, normalised gain, Brier/calibration, offloading over time, power | ✅ `python analysis/analyze.py data/sim_study.db` |
-| Pilot with 3–5 learners (think-aloud) | ⏳ needs you, see `study/` |
-
-**Tests:** `pytest -q` → 8 passed. This includes an end-to-end simulated study that checks
-balanced assignment, that every event type is logged, that the control condition never
-receives a nudge, and that the metacog condition does.
-
-## What the simulation tells us before recruiting anyone
-
-The simulator's behavioural model is an **assumption** used to test the pipeline. Its "effects"
-are not findings. But the power analysis is real:
-
-- with **n = 40 total**, the minimum detectable effect is **d ≈ 0.91** (80% power). Only a very large effect would show up.
-- to detect a moderate **d = 0.5** you need **about 64 per group**.
-
-So a 30–40 person study should be framed as a **pilot** (effect estimates plus qualitative
-insight), or redesigned. Options: a within-subject design (each learner gets both conditions
-on different concepts, counterbalanced), or a course deployment for sample size.
-`study/PROTOCOL.md` recommends the within-subject variant.
-
-## Run
-
-```bash
-pip install fastapi uvicorn httpx scikit-learn pandas statsmodels matplotlib pytest
-uvicorn metacog.app:app --reload          # http://localhost:8000 (mock LLM if no key)
-# real LLM via any OpenAI-compatible endpoint, e.g. Gemini free tier:
-LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai LLM_API_KEY=... LLM_MODEL=gemini-2.0-flash uvicorn metacog.app:app
-python -m metacog.simulate --n 40 --db data/sim_study.db && python analysis/analyze.py data/sim_study.db
+pip install -r requirements.txt
+uvicorn metacog.app:app --reload
+python -m metacog.simulate --n 40 --db data/sim_study.db
+python analysis/analyze.py data/sim_study.db
 pytest -q
 ```
 
-## Known limitations
+It uses a mock LLM by default. To use a real one, set LLM_BASE_URL, LLM_API_KEY and LLM_MODEL for any OpenAI-compatible endpoint.
 
-- The classifier seed set is small and template-generated. The pilot's chat logs must be
-  hand-labelled (two raters, report Cohen's κ) and the classifier retrained.
-- In simulation, argue-back and teach-back only trigger once the AI has given a full solution.
-  The mock LLM never does, so those branches are covered by unit tests only.
-- Output-prediction items measure near transfer. Far transfer is out of scope for a 45-minute session.
+## Limitations
 
-## Demo and model files
-- `demo/index.html`: a self-contained page (open it in any browser) that plays the same student messages to a plain
-  assistant and to the metacognitive one, side by side, using the same decision rules as the app.
-- `models/help_seeking_tfidf_lr.joblib`: the trained help-seeking classifier (loaded automatically by the app);
-  `models/help_seeking_tfidf_lr.json` gives its metadata and cross-validated accuracy.
-- `data/sim_study.db` and `analysis/out/`: an example simulated study and its analysis output.
+The classifier was trained on a small, template-made set of examples, so it should be retrained on real labelled messages from a pilot. The quizzes only test near transfer.
